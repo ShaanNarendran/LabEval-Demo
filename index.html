@@ -159,10 +159,11 @@ async function runCode() {
   document.getElementById("outputBox").textContent = "Running test cases...";
 
   let results = "";
-
+  function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
   for (let i = 0; i < testCases.length; i++) {
     await delay(1500); // 1.5 seconds
-    await axios.post(...); 
     const test = testCases[i];
 
     try {
