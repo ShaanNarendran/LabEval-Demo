@@ -100,47 +100,79 @@ nums = [-5, -4, -3, -2, -1]
 
         <!-- Buttons -->
         <div class="mt-8 space-x-3">
-          <button class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-full shadow transition">Run</button>
-          <button class="border border-purple-600 text-purple-700 px-5 py-2 rounded-full shadow hover:bg-purple-100 transition">Submit</button>
+        <button id="runBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2 rounded-full shadow transition">Run</button>
+        <button class="border border-purple-600 text-purple-700 px-5 py-2 rounded-full shadow hover:bg-purple-100 transition">Submit</button>
         </div>
       </div>
 
-      <!-- 🧑‍💻 Code Editor Mock -->
-      <div class="bg-gray-900 text-white rounded-2xl shadow-lg overflow-hidden flex flex-col h-full">
-        <div class="bg-gray-800 p-3 text-sm font-mono border-b border-gray-700">
-          // C++ Code Editor (Mock)
-        </div>
-        <div class="p-4 font-mono text-sm flex-1 overflow-y-auto whitespace-pre-wrap">
-#include &lt;iostream&gt;<br>
-using namespace std;<br><br>
-int maxSubArraySum(vector&lt;int&gt;& nums) {<br>
-&nbsp;&nbsp;int maxSum = INT_MIN, currentSum = 0;<br>
-&nbsp;&nbsp;for(int x : nums) {<br>
-&nbsp;&nbsp;&nbsp;&nbsp;currentSum += x;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;if(currentSum > maxSum) maxSum = currentSum;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;if(currentSum < 0) currentSum = 0;<br>
-&nbsp;&nbsp;}<br>
-&nbsp;&nbsp;return maxSum;<br>
-}<br><br>
-int main() {<br>
-&nbsp;&nbsp;vector&lt;int&gt; nums = {-2,1,-3,4,-1,2,1,-5,4};<br>
-&nbsp;&nbsp;cout &lt;&lt; maxSubArraySum(nums);<br>
-&nbsp;&nbsp;return 0;<br>
-}
-        </div>
-      </div>
-
-      <!-- 🧾 Output Panel -->
-      <div class="lg:col-span-2 bg-white mt-6 rounded-2xl shadow p-6 border-t-4 border-purple-400">
-        <h3 class="text-lg font-semibold text-gray-800 mb-2">🧾 Output</h3>
-        <div class="bg-gray-100 text-gray-800 p-4 rounded-lg font-mono text-sm whitespace-pre h-24 overflow-y-auto">
-> Compilation Successful<br>
-> Execution Started...<br>
-6
-        </div>
+     <!-- 🧑‍💻 Real Code Editor -->
+<div class="bg-gray-900 text-white rounded-2xl shadow-lg overflow-hidden flex flex-col h-full">
+    <div class="bg-gray-800 p-3 text-sm font-mono border-b border-gray-700">
+      // Your Code
+    </div>
+    <textarea id="codeInput" class="p-4 font-mono text-sm bg-gray-900 text-white flex-1 resize-none outline-none whitespace-pre-wrap" rows="20">
+  #include <iostream>
+  using namespace std;
+  
+  int maxSubArraySum(vector<int>& nums) {
+    int maxSum = INT_MIN, currentSum = 0;
+    for(int x : nums) {
+      currentSum += x;
+      if(currentSum > maxSum) maxSum = currentSum;
+      if(currentSum < 0) currentSum = 0;
+    }
+    return maxSum;
+  }
+  
+  int main() {
+    vector<int> nums = {-2,1,-3,4,-1,2,1,-5,4};
+    cout << maxSubArraySum(nums);
+    return 0;
+  }
+    </textarea>
+  </div>
+  <div id="outputBox" class="bg-gray-100 text-gray-800 p-4 rounded-lg font-mono text-sm whitespace-pre h-24 overflow-y-auto">
+    Waiting for output...
+    </div>
       </div>
     </div>
   </div>
 
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    document.getElementById("runBtn").addEventListener("click", runCode);
+  
+    function runCode() {
+      const code = document.getElementById("codeInput").value;
+      const language = document.getElementById("language").value;
+  
+      const langMap = {
+        "C++": 54,
+        "Python": 71,
+        "Java": 62
+      };
+  
+      document.getElementById("outputBox").textContent = "Running...";
+  
+      axios.post("https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true", {
+        source_code: code,
+        language_id: langMap[language],
+        stdin: "",
+      }, {
+        headers: {
+          "Content-Type": "application/json",
+          "X-RapidAPI-Key": "260e460e5dmsh79b670465e2d1bap19c684jsn27783c3cba53",
+          "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com"
+        }
+      })
+      .then(res => {
+        const output = res.data.stdout || res.data.stderr || res.data.compile_output || "No output.";
+        document.getElementById("outputBox").textContent = output;
+      })
+      .catch(err => {
+        document.getElementById("outputBox").textContent = "Error running code: " + err.message;
+      });
+    }
+</script>
 </body>
 </html>
