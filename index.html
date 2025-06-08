@@ -137,8 +137,8 @@ nums = [-5, -4, -3, -2, -1]
       </div>
     </div>
   </div>
-
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script>
     document.getElementById("runBtn").addEventListener("click", runCode);
   
@@ -152,27 +152,40 @@ nums = [-5, -4, -3, -2, -1]
         "Java": 62
       };
   
+      const language_id = langMap[language];
+  
+      if (!language_id || !code) {
+        document.getElementById("outputBox").textContent = "Missing language or code.";
+        return;
+      }
+  
       document.getElementById("outputBox").textContent = "Running...";
   
-      axios.post("https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true", {
-        source_code: code,
-        language_id: langMap[language],
-        stdin: "",
-      }, {
-        headers: {
-          "Content-Type": "application/json",
-          "X-RapidAPI-Key": "260e460e5dmsh79b670465e2d1bap19c684jsn27783c3cba53",
-          "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com"
+      axios.post(
+        "https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true",
+        {
+          source_code: code,
+          language_id: language_id,
+          stdin: ""
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-RapidAPI-Key": "YOUR_RAPIDAPI_KEY_HERE",
+            "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com"
+          }
         }
-      })
+      )
       .then(res => {
-        const output = res.data.stdout || res.data.stderr || res.data.compile_output || "No output.";
+        const result = res.data;
+        const output = result.stdout || result.stderr || result.compile_output || "No output.";
         document.getElementById("outputBox").textContent = output;
       })
       .catch(err => {
-        document.getElementById("outputBox").textContent = "Error running code: " + err.message;
+        console.error("Judge0 Error Response:", err.response?.data || err.message);
+        document.getElementById("outputBox").textContent = "❌ Error running code: " + (err.response?.data?.message || err.message);
       });
     }
-</script>
+  </script>
 </body>
 </html>
