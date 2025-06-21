@@ -79,7 +79,6 @@
       const res = await axios.get("http://localhost:5050/student/questions");
       questions = res.data;
       const dropdown = document.getElementById("questionSelect");
-
       dropdown.innerHTML = "";
       questions.forEach((q, i) => {
         const opt = document.createElement("option");
@@ -110,11 +109,11 @@
       }
 
       const tcDiv = document.getElementById("testCases");
-      tcDiv.innerHTML = "";
+      let testCaseHTML = "";
       let visibleIndex = 1;
       q.testCases?.forEach(test => {
         if (!test.hidden) {
-          tcDiv.innerHTML += `
+          testCaseHTML += `
             <div>
               <p class="font-semibold text-purple-700 mb-1">Sample Input ${visibleIndex}:</p>
               <pre class="bg-gray-100 p-3 rounded text-sm text-gray-800 font-mono">${test.input}</pre>
@@ -124,6 +123,7 @@
           visibleIndex++;
         }
       });
+      tcDiv.innerHTML = testCaseHTML;
     }
 
     async function runCode() {
@@ -132,33 +132,34 @@
       const testCases = questions[currentIndex].testCases || [];
       const outputBox = document.getElementById("outputBox");
 
-      outputBox.innerHTML = "> Running test cases...\n";
+      let logOutput = "> Running test cases...\n";
 
       for (let i = 0; i < testCases.length; i++) {
         const test = testCases[i];
-        outputBox.innerHTML += `\nTest Case ${i + 1}:\nInput:\n${test.input}\n`;
+        logOutput += `\nTest Case ${i + 1}:\nInput:\n${test.input}\n`;
 
-        await axios.post("http://localhost:5050/execute", {
-          source_code: code,
-          language: lang,
-          stdin: test.input
-        })
-        .then(res => {
+        try {
+          const res = await axios.post("http://localhost:5050/execute", {
+            source_code: code,
+            language: lang,
+            stdin: test.input
+          });
+
           const result = res.data.output?.trim() || "No output";
           const expected = test.expected.trim();
 
-          if (result === expected) {
-            outputBox.innerHTML += `Passed.\n`;
-          } else {
-            outputBox.innerHTML += `Failed.\nExpected: ${expected}\nGot: ${result}\n`;
-          }
-        })
-        .catch(err => {
+          logOutput += (result === expected)
+            ? "Passed.\n"
+            : `Failed.\nExpected: ${expected}\nGot: ${result}\n`;
+
+        } catch (err) {
           console.error("Error:", err);
           const message = err?.response?.data?.error || "Unknown execution error.";
-          outputBox.innerHTML += `Error: ${message}\n`;
-        });
+          logOutput += `Error: ${message}\n`;
+        }
       }
+
+      outputBox.innerHTML = logOutput;
     }
 
     document.getElementById("runBtn").addEventListener("click", runCode);
