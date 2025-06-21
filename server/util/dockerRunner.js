@@ -35,7 +35,7 @@ function runCodeInDocker(language, code) {
 
     const cmd = `docker run --rm -v ${filepath}:/app/${filename} -w /app ${lang.image} bash -c "${lang.command(filename)}"`;
 
-    console.log("🐳 Docker Command:", cmd);
+    console.log("Docker Command:", cmd);
 
     exec(cmd, (err, stdout, stderr) => {
       console.log("stdout:", stdout);
