@@ -3,11 +3,12 @@
     "version": "1.0.0",
     "main": "app.js",
     "scripts": {
-      "start": "node app.js"
+        "start": "node app.js"
     },
     "dependencies": {
-      "cors": "^2.8.5",
-      "express": "^4.18.2",
-      "uuid": "^9.0.0"
+        "cors": "^2.8.5",
+        "express": "^4.18.2",
+        "express-validator": "^7.2.1",
+        "uuid": "^9.0.0"
     }
-  }
+}

@@ -1,28 +1,41 @@
 const express = require('express');
+const { body, validationResult } = require('express-validator'); 
 const { runCodeInDocker } = require('../util/dockerRunner');
 const router = express.Router();
 
-router.post('/', async (req, res) => {
-  console.log("Received POST /execute request");
-  const { language, source_code } = req.body;
+const SUPPORTED_LANGUAGES = ['c', 'cpp', 'python', 'java'];
 
-  if (!language || !source_code) {
-    return res.status(400).json({ error: "Missing language or source_code in request." });
+router.post(
+  '/',
+  // 1. Validation Middleware: This runs before the main route logic.
+  [
+    body('language').isIn(SUPPORTED_LANGUAGES).withMessage('Invalid or unsupported language.'),
+    body('source_code').not().isEmpty().withMessage('Source code cannot be empty.')
+  ],
+  // 2. Main Route Handler
+  async (req, res, next) => {
+    // 3. Check for validation errors
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      // If there are errors, return a 400 status with the error details
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { language, source_code } = req.body;
+
+    try {
+      // 4. If validation passes, run the code
+      const output = await runCodeInDocker(language, source_code);
+      res.json({ output: output || "No output received." });
+    } catch (err) {
+      // 5. Handle errors from code execution
+      if (err.isExecutionError) {
+        return res.status(400).json({ error: err.message });
+      }
+      // 6. Pass any other server errors to the central handler
+      next(err); 
+    }
   }
-
-  try {
-    const output = await runCodeInDocker(language, source_code);
-
-    res.json({ output: output || "No output received." });
-
-  } catch (err) {
-    console.error("Docker execution failed:", err);
-
-    // Send full stderr message to frontend for display
-    res.status(500).json({
-      error: err.message || "Unknown error occurred during Docker execution."
-    });
-  }
-});
+);
 
 module.exports = router;

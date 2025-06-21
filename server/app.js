@@ -1,29 +1,41 @@
 const express = require('express');
 const cors = require('cors');
+const mongoose = require("mongoose");
+require('dotenv').config(); // Make sure dotenv is configured at the top
+
 const executeRoute = require('./routes/execute');
+const facultyRoutes = require('./routes/faculty');
+const studentRoutes = require("./routes/student");
+const errorHandler = require('./middleware/errorHandler'); // Import the error handler
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use('/execute', executeRoute);
+// Use the MongoDB connection string from environment variables
+const MONGO_URI = process.env.MONGO_URI;
+if (!MONGO_URI) {
+    console.error("MongoDB connection string (MONGO_URI) not found in environment variables. Please set it in your .env file.");
+    process.exit(1); // Exit if the connection string is not set
+}
 
-const PORT = 5050;
+mongoose.connect(MONGO_URI)
+    .then(() => console.log("MongoDB connected"))
+    .catch(err => {
+        console.error("MongoDB connection error:", err);
+        process.exit(1); // Exit on connection failure
+    });
+
+// Routes
+app.use('/execute', executeRoute);
+app.use("/faculty", facultyRoutes);
+app.use("/student", studentRoutes);
+
+// Centralized error handling middleware
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 5050;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
-
-const mongoose = require("mongoose");
-require('dotenv').config();
-app.use(express.json());  // for parsing JSON request bodies
-
-// Connect to local MongoDB or Atlas
-mongoose.connect("mongodb+srv://labevaluser:db11@cluster0.3aj3w4z.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-.then(() => console.log("MongoDB connected"))
-.catch(err => console.error("MongoDB connection error:", err));
-
-const facultyRoutes = require('./routes/faculty');
-app.use("/faculty", require("./routes/faculty"));
-const studentRoutes=require("./routes/student");
-app.use("/student", require("./routes/student")); 
 

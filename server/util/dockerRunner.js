@@ -7,50 +7,67 @@ const tempDir = path.join(__dirname, '..', 'temp');
 if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
 
 const config = {
+    c: {
+      ext: 'c',
+      image: 'gcc',
+      command: (file) => `gcc ${file} -o ${file}.out && ./${file}.out`
+    },
     cpp: {
       ext: 'cpp',
       image: 'gcc',
-      command: (file) => `g++ ${file} -o ${file}.out && ./$(basename ${file}).out`
+      command: (file) => `g++ ${file} -o ${file}.out && ./${file}.out`
     },
     python: {
       ext: 'py',
       image: 'python:3.10',
       command: (file) => `python ${file}`
+    },
+    java: {
+      ext: 'java',
+      image: 'openjdk:17-slim',
+      command: (file) => `javac ${file} && java Main`
     }
   };
 
 function runCodeInDocker(language, code) {
-  console.log("Inside runCodeInDocker()");
-  console.log("Language:", language);
-  console.log("Code snippet:", code.slice(0, 100));
   return new Promise((resolve, reject) => {
     const lang = config[language];
-    if (!lang) return reject(new Error('Unsupported language'));
+    if (!lang) {
+      return reject(new Error('Unsupported language'));
+    }
 
     const id = uuidv4();
-    const filename = `${id}.${lang.ext}`;
+    const filename = language === 'java' ? 'Main.java' : `${id}.${lang.ext}`;
     const filepath = path.join(tempDir, filename);
 
     fs.writeFileSync(filepath, code);
-
-    const cmd = `docker run --rm -v ${filepath}:/app/${filename} -w /app ${lang.image} bash -c "${lang.command(filename)}"`;
-
-    console.log("Docker Command:", cmd);
-
-    exec(cmd, (err, stdout, stderr) => {
-      console.log("stdout:", stdout);
-      console.log("stderr:", stderr);
-      fs.unlinkSync(filepath);
     
+    const workDir = '/app';
+    const dockerCommand = [
+        'docker', 'run', '--rm',
+        '--network', 'none',
+        '--memory=256m',
+        '--cpus=0.5',
+        `-v`, `${filepath}:${workDir}/${filename}:ro`,
+        '-w', workDir,
+        lang.image,
+        'bash', '-c', `"${lang.command(filename)}"`
+    ].join(' ');
+
+    console.log("Executing Docker Command:", dockerCommand);
+
+    exec(dockerCommand, { timeout: 10000 }, (err, stdout, stderr) => {
+      fs.unlinkSync(filepath);
+
       if (err) {
-        console.error("Execution error:", err.message);
-        return reject(new Error(stderr || err.message));
+        // This is the key change. We now reject with the 'stderr' from the
+        // container, as this contains the compilation or runtime error.
+        // We wrap it in a custom error object to identify it later.
+        const executionError = new Error(stderr || 'Code execution failed or timed out.');
+        executionError.isExecutionError = true;
+        return reject(executionError);
       }
-      const lang = config[language];
-      if (!lang) {
-        console.log("Unsupported language:", language);
-        return reject(new Error("Unsupported language: " + language));
-      }
+      
       resolve(stdout);
     });
   });

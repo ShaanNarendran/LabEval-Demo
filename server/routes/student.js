@@ -9,7 +9,7 @@ router.get("/question/:id", async (req, res) => {
     if (!q) return res.status(404).json({ error: "Question not found" });
     res.json(q);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -19,7 +19,7 @@ router.get("/questions", async (req, res) => {
     const questions = await Question.find();
     res.json(questions);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
