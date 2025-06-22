@@ -1,41 +1,36 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require("mongoose");
-require('dotenv').config(); // Make sure dotenv is configured at the top
-
-const executeRoute = require('./routes/execute');
-const facultyRoutes = require('./routes/faculty');
-const studentRoutes = require("./routes/student");
-const errorHandler = require('./middleware/errorHandler'); // Import the error handler
+const path = require('path');
+require('dotenv').config();
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-// Use the MongoDB connection string from environment variables
-const MONGO_URI = process.env.MONGO_URI;
-if (!MONGO_URI) {
-    console.error("MongoDB connection string (MONGO_URI) not found in environment variables. Please set it in your .env file.");
-    process.exit(1); // Exit if the connection string is not set
-}
+// --- API Routes ---
+app.use('/execute', require('./routes/execute'));
+app.use('/faculty', require('./routes/faculty'));
+app.use('/student', require('./routes/student'));
 
-mongoose.connect(MONGO_URI)
-    .then(() => console.log("MongoDB connected"))
-    .catch(err => {
-        console.error("MongoDB connection error:", err);
-        process.exit(1); // Exit on connection failure
-    });
-
-// Routes
-app.use('/execute', executeRoute);
-app.use("/faculty", facultyRoutes);
-app.use("/student", studentRoutes);
-
-// Centralized error handling middleware
-app.use(errorHandler);
-
-const PORT = process.env.PORT || 5050;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+// --- Static File Serving ---
+app.use(express.static(path.join(__dirname, '../client')));
+//using * here will break the code so a necessary change was made because of express 5
+app.get('/{*any}', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/index.html'));
 });
 
+// --- Database Connection and Server Start ---
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("MongoDB connected");
+    const PORT = process.env.PORT || 5050;
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error("MongoDB connection error:", err);
+    process.exit(1);
+  });

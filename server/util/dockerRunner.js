@@ -27,7 +27,7 @@ const config = {
       image: 'openjdk:17-slim',
       command: (file) => `javac ${file} && java Main`
     }
-  };
+};
 
 function runCodeInDocker(language, code) {
   return new Promise((resolve, reject) => {
@@ -35,13 +35,10 @@ function runCodeInDocker(language, code) {
     if (!lang) {
       return reject(new Error('Unsupported language'));
     }
-
     const id = uuidv4();
     const filename = language === 'java' ? 'Main.java' : `${id}.${lang.ext}`;
     const filepath = path.join(tempDir, filename);
-
     fs.writeFileSync(filepath, code);
-    
     const workDir = '/app';
     const dockerCommand = [
         'docker', 'run', '--rm',
@@ -54,23 +51,17 @@ function runCodeInDocker(language, code) {
         'bash', '-c', `"${lang.command(filename)}"`
     ].join(' ');
 
-    console.log("Executing Docker Command:", dockerCommand);
-
     exec(dockerCommand, { timeout: 10000 }, (err, stdout, stderr) => {
       fs.unlinkSync(filepath);
-
       if (err) {
-        // This is the key change. We now reject with the 'stderr' from the
-        // container, as this contains the compilation or runtime error.
-        // We wrap it in a custom error object to identify it later.
         const executionError = new Error(stderr || 'Code execution failed or timed out.');
         executionError.isExecutionError = true;
         return reject(executionError);
       }
-      
       resolve(stdout);
     });
   });
 }
 
-module.exports = { runCodeInDocker };
+// This line is updated to export the config object
+module.exports = { runCodeInDocker, dockerConfig: config };
